@@ -86,11 +86,6 @@
 3. 접근 방법 및 알고리즘 설명 (선택 사항)
 4. 시간 복잡도 및 공간 복잡도 분석 (선택 사항)
 
-
-
-
-[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=your_id_here)](https://solved.ac/rladydgnj)
-
 ---
 
-© 2025 [당신의 이름]. All rights reserved.
+© 2025 [Young4424]. All rights reserved.
