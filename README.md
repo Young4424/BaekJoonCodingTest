@@ -12,6 +12,13 @@
 - [풀이 방법](#풀이-방법)
 - [참고 자료](#참고-자료)
 
+
+## 📊 개인 진행 상황
+
+[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=your_id_here)](https://solved.ac/rladydgnj)
+
+[![Solved.ac 티어](http://mazassumnida.wtf/api/mini/generate_badge?boj=your_baekjoon_id)](https://solved.ac/rladydgnj)
+
 ## 🎯 소개
 
 백준 온라인 저지에서 제공하는 다양한 알고리즘 문제들을 풀고 해당 풀이 코드를 저장하는 공간입니다. 알고리즘 학습과 코딩 테스트 준비를 위한 개인 기록용으로 사용됩니다.
@@ -82,11 +89,9 @@
 - [백준 온라인 저지](https://www.acmicpc.net/)
 - [solved.ac](https://solved.ac/)
 
----
 
-## 📊 개인 진행 상황
 
-[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=your_id_here)](https://solved.ac/your_id_here)
+[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=your_id_here)](https://solved.ac/rladydgnj)
 
 ---
 
