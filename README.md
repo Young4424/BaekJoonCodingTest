@@ -15,8 +15,6 @@
 
 ## 📊 개인 진행 상황
 
-[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/rladydgnj)
-
 [![Solved.ac 티어](http://mazassumnida.wtf/api/mini/generate_badge?boj=rladydgnj)](https://solved.ac/rladydgnj)
 
 ## 🎯 소개
