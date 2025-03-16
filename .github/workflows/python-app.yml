@@ -127,11 +127,13 @@ jobs:
           echo "ruby_count=${RUBY_COUNT}" >> $GITHUB_OUTPUT
           echo "total_by_tier=${TOTAL_BY_TIER}" >> $GITHUB_OUTPUT
 
-      - name: Create new README content
+      - name: Create complete README
         run: |
-          # 통계 내용 파일 생성
-          cat > stats_content.md << EOL
-          # 🧠 알고리즘 문제 풀이 저장소
+          # 전체 README 내용 생성
+          cat > README.md << EOL
+          # 백준 알고리즘 문제 풀이 저장소
+
+          이 저장소는 백준 온라인 저지의 알고리즘 문제 풀이를 기록하고 공유하기 위한 곳입니다.
 
           ## 📊 solved.ac 통계
           > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
@@ -154,38 +156,45 @@ jobs:
           | 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
           | **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |
 
+          ## 📚 목차
+          * 소개
+          * 문제 분류
+          * 진행 상황
+          * 사용 언어
+          * 폴더 구조
+          * 풀이 방법
+          * 참고 자료
+
+          ## 🎯 소개
+          백준 온라인 저지에서 제공하는 다양한 알고리즘 문제들을 풀고 해당 풀이 코드를 저장하는 공간입니다. 알고리즘 학습과 코딩 테스트 준비를 위한 개인 기록용으로 사용됩니다.
+
+          ## 📋 문제 분류
+          문제들은 다음과 같은 알고리즘 유형으로 분류됩니다:
+
+          * 구현 (Implementation)
+          * 자료구조 (Data Structure)
+          * 정렬 (Sorting)
+          * 그래프 이론 (Graph)
+          * 그리디 알고리즘 (Greedy)
+          * 다이나믹 프로그래밍 (Dynamic Programming)
+          * 이분 탐색 (Binary Search)
+          * BFS/DFS
+          * 브루트포스 (Brute Force)
+          * 시뮬레이션 (Simulation)
+
+          ## 💻 사용 언어
+          * Python
+
+          ## 🔍 풀이 방법
+          각 문제 폴더에는 다음 내용이 포함됩니다:
+
+          1. 소스 코드 파일
+          2. 문제 설명 (선택 사항)
+          3. 접근 방법 및 알고리즘 설명 (선택 사항)
+          4. 시간 복잡도 및 공간 복잡도 분석 (선택 사항)
+
+          ![알고리즘 공부](https://github.com/user-attachments/assets/69600399-5107-4edd-87aa-74b02de454e0)
           EOL
-          
-          # 기존 README.md에서 통계 섹션 제거
-          if grep -q "## 📊 solved.ac 통계" README.md || grep -q "## 🚀 진행 상황" README.md; then
-            # 통계 섹션과 진행 상황 섹션 제거
-            awk '
-            /^# 🧠 알고리즘 문제 풀이 저장소/ { in_header=1; next }
-            /^## 📊 solved\.ac 통계/,/^##[^#]/ { if (/^##[^#]/ && !/^## 🚀 진행 상황/) print; else next }
-            /^## 🚀 진행 상황/,/^##[^#]/ { if (/^##[^#]/ && !/^## 📊 solved\.ac 통계/) print; else next }
-            { if (!in_header) print }
-            ' README.md > original_content.md
-          else
-            # 첫 줄(제목 줄)을 제외한 내용 저장
-            if grep -q "^# " README.md; then
-              sed '1d' README.md > original_content.md
-            else
-              # 제목 줄이 없으면 모든 내용 복사
-              cp README.md original_content.md
-            fi
-          fi
-          
-          # 새 README 생성 (통계 내용 + 기존 내용)
-          cat stats_content.md > new_readme.md
-          
-          # 기존 내용이 있으면 추가
-          if [ -s original_content.md ]; then
-            echo "" >> new_readme.md
-            cat original_content.md >> new_readme.md
-          fi
-          
-          # 새 README로 교체
-          mv new_readme.md README.md
 
       - name: Commit and push changes
         run: |
@@ -199,5 +208,5 @@ jobs:
             exit 0
           fi
           
-          git commit -m "Update solved.ac statistics and problem counts"
+          git commit -m "Update README with solved.ac statistics and complete content"
           git push --force
