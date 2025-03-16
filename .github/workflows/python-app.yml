@@ -130,7 +130,9 @@ jobs:
       - name: Create new README content
         run: |
           # 통계 내용 파일 생성
-          cat > stats_content.md << 'EOL'
+          cat > stats_content.md << EOL
+          # 🧠 알고리즘 문제 풀이 저장소
+
           ## 📊 solved.ac 통계
           > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
 
@@ -151,42 +153,39 @@ jobs:
           | 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
           | 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
           | **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |
+
           EOL
           
-          # 기존 README.md에서 통계 섹션 제거하고 새 통계 추가
-          if grep -q "## 📊 solved.ac 통계" README.md; then
-            # 통계 섹션 전까지의 내용 저장
-            grep -B 1000 -m 1 "## 📊 solved.ac 통계" README.md | head -n -1 > temp_readme.md
-            # 통계 섹션 추가
-            cat stats_content.md >> temp_readme.md
-            # 다음 섹션 이후 내용 추가
-            grep -n "^## " README.md | awk -F: '{print $1}' | while read line; do
-              if [ $line -gt $(grep -n "## 📊 solved.ac 통계" README.md | cut -d: -f1) ]; then
-                tail -n +$line README.md >> temp_readme.md
-                break
-              fi
-            done
-          elif grep -q "## 🚀 진행 상황" README.md; then
-            # 진행 상황 섹션 전까지의 내용 저장
-            grep -B 1000 -m 1 "## 🚀 진행 상황" README.md | head -n -1 > temp_readme.md
-            # 통계 섹션 추가
-            cat stats_content.md >> temp_readme.md
-            # 다음 섹션 이후 내용 추가
-            grep -n "^## " README.md | awk -F: '{print $1}' | while read line; do
-              if [ $line -gt $(grep -n "## 🚀 진행 상황" README.md | cut -d: -f1) ]; then
-                tail -n +$line README.md >> temp_readme.md
-                break
-              fi
-            done
+          # 기존 README.md에서 통계 섹션 제거
+          if grep -q "## 📊 solved.ac 통계" README.md || grep -q "## 🚀 진행 상황" README.md; then
+            # 통계 섹션과 진행 상황 섹션 제거
+            awk '
+            /^# 🧠 알고리즘 문제 풀이 저장소/ { in_header=1; next }
+            /^## 📊 solved\.ac 통계/,/^##[^#]/ { if (/^##[^#]/ && !/^## 🚀 진행 상황/) print; else next }
+            /^## 🚀 진행 상황/,/^##[^#]/ { if (/^##[^#]/ && !/^## 📊 solved\.ac 통계/) print; else next }
+            { if (!in_header) print }
+            ' README.md > original_content.md
           else
-            # 기존 README 내용 유지하고 끝에 추가
-            cat README.md > temp_readme.md
-            echo "" >> temp_readme.md
-            cat stats_content.md >> temp_readme.md
+            # 첫 줄(제목 줄)을 제외한 내용 저장
+            if grep -q "^# " README.md; then
+              sed '1d' README.md > original_content.md
+            else
+              # 제목 줄이 없으면 모든 내용 복사
+              cp README.md original_content.md
+            fi
           fi
           
-          # 임시 파일을 README.md로 이동
-          mv temp_readme.md README.md
+          # 새 README 생성 (통계 내용 + 기존 내용)
+          cat stats_content.md > new_readme.md
+          
+          # 기존 내용이 있으면 추가
+          if [ -s original_content.md ]; then
+            echo "" >> new_readme.md
+            cat original_content.md >> new_readme.md
+          fi
+          
+          # 새 README로 교체
+          mv new_readme.md README.md
 
       - name: Commit and push changes
         run: |
