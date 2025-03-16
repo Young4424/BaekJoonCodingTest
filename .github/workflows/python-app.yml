@@ -97,11 +97,6 @@ jobs:
         run: |
           git config --local user.email "github-actions@github.com"
           git config --local user.name "GitHub Actions"
-          
-          # 원격 변경사항 가져오기
-          git pull --rebase
-          
-          # 변경사항 커밋 및 푸시
           git add README.md
           git diff --staged --quiet || git commit -m "Update solved.ac statistics"
-          git push
+          git push --force
