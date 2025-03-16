@@ -1,0 +1,102 @@
+name: Update solved.ac Stats
+
+on:
+  schedule:
+    # 매일 오전 9시(KST)에 실행 (UTC 0시)
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 수동 실행 옵션
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get solved.ac user info
+        id: solvedac
+        run: |
+          # BOJ 사용자 이름 설정
+          BOJ_USERNAME="${{ secrets.rladydgnj }}"
+          
+          # solved.ac API에서 사용자 정보 가져오기
+          USER_INFO=$(curl -s "https://solved.ac/api/v3/user/show?handle=${BOJ_USERNAME}")
+          
+          # 필요한 정보 추출
+          TIER=$(echo $USER_INFO | jq -r '.tier')
+          SOLVED_COUNT=$(echo $USER_INFO | jq -r '.solvedCount')
+          RANK=$(echo $USER_INFO | jq -r '.rank')
+          
+          # 티어 이름 매핑
+          if [ "$TIER" -eq "0" ]; then
+            TIER_NAME="Unrated"
+          elif [ "$TIER" -le "5" ]; then
+            TIER_NAMES=("" "Bronze V" "Bronze IV" "Bronze III" "Bronze II" "Bronze I")
+            TIER_NAME="${TIER_NAMES[$TIER]}"
+          elif [ "$TIER" -le "10" ]; then
+            TIER_NAMES=("" "Silver V" "Silver IV" "Silver III" "Silver II" "Silver I")
+            TIER_NAME="${TIER_NAMES[$TIER-5]}"
+          elif [ "$TIER" -le "15" ]; then
+            TIER_NAMES=("" "Gold V" "Gold IV" "Gold III" "Gold II" "Gold I")
+            TIER_NAME="${TIER_NAMES[$TIER-10]}"
+          elif [ "$TIER" -le "20" ]; then
+            TIER_NAMES=("" "Platinum V" "Platinum IV" "Platinum III" "Platinum II" "Platinum I")
+            TIER_NAME="${TIER_NAMES[$TIER-15]}"
+          elif [ "$TIER" -le "25" ]; then
+            TIER_NAMES=("" "Diamond V" "Diamond IV" "Diamond III" "Diamond II" "Diamond I")
+            TIER_NAME="${TIER_NAMES[$TIER-20]}"
+          elif [ "$TIER" -le "30" ]; then
+            TIER_NAMES=("" "Ruby V" "Ruby IV" "Ruby III" "Ruby II" "Ruby I")
+            TIER_NAME="${TIER_NAMES[$TIER-25]}"
+          elif [ "$TIER" -eq "31" ]; then
+            TIER_NAME="Master"
+          else
+            TIER_NAME="Unknown"
+          fi
+          
+          # 현재 날짜 가져오기
+          DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # 정보 저장
+          echo "::set-output name=username::$BOJ_USERNAME"
+          echo "::set-output name=tier_name::$TIER_NAME"
+          echo "::set-output name=solved_count::$SOLVED_COUNT"
+          echo "::set-output name=rank::$RANK"
+          echo "::set-output name=date::$DATE"
+
+      - name: Update README
+        run: |
+          # README.md 파일에서 해당 섹션 찾아 업데이트하기
+          README_CONTENT=$(cat README.md)
+          
+          # solved.ac 통계 섹션 생성
+          STATS_SECTION=$(cat << EOF
+          ## 📊 solved.ac 통계
+          > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
+
+          [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=${{ steps.solvedac.outputs.username }})](https://solved.ac/profile/${{ steps.solvedac.outputs.username }})
+
+          ### 기본 정보
+          - 티어: ${{ steps.solvedac.outputs.tier_name }}
+          - 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
+          - 랭킹: ${{ steps.solvedac.outputs.rank }}위
+          EOF
+          )
+          
+          # 기존 섹션이 있는지 확인하고 업데이트
+          if grep -q "## 📊 solved.ac 통계" README.md; then
+            # sed를 사용하여 기존 섹션 대체
+            # 정규식으로 섹션 시작부터 다음 섹션 시작 전까지 찾아 대체
+            sed -i '/## 📊 solved\.ac 통계/,/##/c\'"$STATS_SECTION"'\n\n##' README.md
+          else
+            # 기존 섹션이 없으면 파일 끝에 추가
+            echo -e "\n$STATS_SECTION" >> README.md
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add README.md
+          git diff --staged --quiet || git commit -m "Update solved.ac statistics"
+          git push
