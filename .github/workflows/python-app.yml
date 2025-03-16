@@ -128,59 +128,65 @@ jobs:
           echo "total_by_tier=${TOTAL_BY_TIER}" >> $GITHUB_OUTPUT
 
       - name: Create new README content
-        id: create_content
         run: |
-          # 기존 README.md에서 solved.ac 통계 부분 제외한 내용 가져오기
+          # 통계 내용 파일 생성
+          cat > stats_content.md << 'EOL'
+          ## 📊 solved.ac 통계
+          > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
+
+          [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
+
+          ### 기본 정보
+          - 티어: ${{ steps.solvedac.outputs.tier_name }}
+          - 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
+          - 랭킹: ${{ steps.solvedac.outputs.rank }}위
+
+          ## 🚀 진행 상황
+          | 난이도 | 해결한 문제 수 |
+          |:-------:|:-------:|
+          | 브론즈 | ${{ steps.solvedac.outputs.bronze_count }}문제 |
+          | 실버 | ${{ steps.solvedac.outputs.silver_count }}문제 |
+          | 골드 | ${{ steps.solvedac.outputs.gold_count }}문제 |
+          | 플래티넘 | ${{ steps.solvedac.outputs.platinum_count }}문제 |
+          | 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
+          | 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
+          | **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |
+          EOL
+          
+          # 기존 README.md에서 통계 섹션 제거하고 새 통계 추가
           if grep -q "## 📊 solved.ac 통계" README.md; then
-            CONTENT_BEFORE=$(grep -B 1000 -m 1 "## 📊 solved.ac 통계" README.md | head -n -1)
-            CONTENT_AFTER=$(grep -A 1000 -m 1 "^## " <(grep -A 1000 "## 📊 solved.ac 통계" README.md) | tail -n +2)
+            # 통계 섹션 전까지의 내용 저장
+            grep -B 1000 -m 1 "## 📊 solved.ac 통계" README.md | head -n -1 > temp_readme.md
+            # 통계 섹션 추가
+            cat stats_content.md >> temp_readme.md
+            # 다음 섹션 이후 내용 추가
+            grep -n "^## " README.md | awk -F: '{print $1}' | while read line; do
+              if [ $line -gt $(grep -n "## 📊 solved.ac 통계" README.md | cut -d: -f1) ]; then
+                tail -n +$line README.md >> temp_readme.md
+                break
+              fi
+            done
           elif grep -q "## 🚀 진행 상황" README.md; then
-            CONTENT_BEFORE=$(grep -B 1000 -m 1 "## 🚀 진행 상황" README.md | head -n -1)
-            CONTENT_AFTER=$(grep -A 1000 -m 1 "^## " <(grep -A 1000 "## 🚀 진행 상황" README.md) | tail -n +2)
+            # 진행 상황 섹션 전까지의 내용 저장
+            grep -B 1000 -m 1 "## 🚀 진행 상황" README.md | head -n -1 > temp_readme.md
+            # 통계 섹션 추가
+            cat stats_content.md >> temp_readme.md
+            # 다음 섹션 이후 내용 추가
+            grep -n "^## " README.md | awk -F: '{print $1}' | while read line; do
+              if [ $line -gt $(grep -n "## 🚀 진행 상황" README.md | cut -d: -f1) ]; then
+                tail -n +$line README.md >> temp_readme.md
+                break
+              fi
+            done
           else
-            CONTENT_BEFORE=$(cat README.md)
-            CONTENT_AFTER=""
+            # 기존 README 내용 유지하고 끝에 추가
+            cat README.md > temp_readme.md
+            echo "" >> temp_readme.md
+            cat stats_content.md >> temp_readme.md
           fi
           
-          # 새 통계 내용 생성
-          STATS_CONTENT="## 📊 solved.ac 통계
-> 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
-
-[![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
-
-### 기본 정보
-- 티어: ${{ steps.solvedac.outputs.tier_name }}
-- 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
-- 랭킹: ${{ steps.solvedac.outputs.rank }}위
-
-## 🚀 진행 상황
-| 난이도 | 해결한 문제 수 |
-|:-------:|:-------:|
-| 브론즈 | ${{ steps.solvedac.outputs.bronze_count }}문제 |
-| 실버 | ${{ steps.solvedac.outputs.silver_count }}문제 |
-| 골드 | ${{ steps.solvedac.outputs.gold_count }}문제 |
-| 플래티넘 | ${{ steps.solvedac.outputs.platinum_count }}문제 |
-| 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
-| 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
-| **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |"
-          
-          # 새 README 파일 생성
-          if [ -n "$CONTENT_BEFORE" ]; then
-            echo "$CONTENT_BEFORE" > NEW_README.md
-            echo "" >> NEW_README.md
-          else
-            touch NEW_README.md
-          fi
-          
-          echo "$STATS_CONTENT" >> NEW_README.md
-          
-          if [ -n "$CONTENT_AFTER" ]; then
-            echo "" >> NEW_README.md
-            echo "$CONTENT_AFTER" >> NEW_README.md
-          fi
-          
-          # 새 README 파일로 교체
-          mv NEW_README.md README.md
+          # 임시 파일을 README.md로 이동
+          mv temp_readme.md README.md
 
       - name: Commit and push changes
         run: |
