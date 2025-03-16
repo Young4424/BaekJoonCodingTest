@@ -17,7 +17,7 @@ jobs:
         id: solvedac
         run: |
           # BOJ 사용자 이름 설정
-          BOJ_USERNAME="${{ secrets.rladydgnj }}"
+          BOJ_USERNAME="rladydgnj"
           
           # solved.ac API에서 사용자 정보 가져오기
           USER_INFO=$(curl -s "https://solved.ac/api/v3/user/show?handle=${BOJ_USERNAME}")
@@ -58,11 +58,11 @@ jobs:
           DATE=$(date '+%Y-%m-%d %H:%M:%S')
           
           # 정보 저장
-          echo "::set-output name=username::$BOJ_USERNAME"
-          echo "::set-output name=tier_name::$TIER_NAME"
-          echo "::set-output name=solved_count::$SOLVED_COUNT"
-          echo "::set-output name=rank::$RANK"
-          echo "::set-output name=date::$DATE"
+          echo "username=${BOJ_USERNAME}" >> $GITHUB_OUTPUT
+          echo "tier_name=${TIER_NAME}" >> $GITHUB_OUTPUT
+          echo "solved_count=${SOLVED_COUNT}" >> $GITHUB_OUTPUT
+          echo "rank=${RANK}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
 
       - name: Update README
         run: |
@@ -74,7 +74,7 @@ jobs:
           ## 📊 solved.ac 통계
           > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
 
-          [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=${{ steps.solvedac.outputs.username }})](https://solved.ac/profile/${{ steps.solvedac.outputs.username }})
+          [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
 
           ### 기본 정보
           - 티어: ${{ steps.solvedac.outputs.tier_name }}
