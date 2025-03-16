@@ -10,16 +10,10 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code with full history
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
 
       - name: Get solved.ac user info and problem stats
         id: solvedac
@@ -133,59 +127,72 @@ jobs:
           echo "ruby_count=${RUBY_COUNT}" >> $GITHUB_OUTPUT
           echo "total_by_tier=${TOTAL_BY_TIER}" >> $GITHUB_OUTPUT
 
-      - name: Update README using GitHub API
+      - name: Create new README content
+        id: create_content
         run: |
-          # solved.ac 통계 섹션 생성
-          STATS_SECTION="## 📊 solved.ac 통계
-          > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
-
-          [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
-
-          ### 기본 정보
-          - 티어: ${{ steps.solvedac.outputs.tier_name }}
-          - 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
-          - 랭킹: ${{ steps.solvedac.outputs.rank }}위
-
-          ## 🚀 진행 상황
-          | 난이도 | 해결한 문제 수 |
-          |:-------:|:-------:|
-          | 브론즈 | ${{ steps.solvedac.outputs.bronze_count }}문제 |
-          | 실버 | ${{ steps.solvedac.outputs.silver_count }}문제 |
-          | 골드 | ${{ steps.solvedac.outputs.gold_count }}문제 |
-          | 플래티넘 | ${{ steps.solvedac.outputs.platinum_count }}문제 |
-          | 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
-          | 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
-          | **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |"
-          
-          # 현재 README 내용 가져오기
-          README_CONTENT=$(cat README.md)
-          
-          # 기존 통계 섹션 업데이트 또는 추가
-          if echo "$README_CONTENT" | grep -q "## 📊 solved.ac 통계"; then
-            # 기존 통계 섹션이 있는 경우, 해당 섹션부터 다음 섹션까지 대체
-            NEW_CONTENT=$(echo "$README_CONTENT" | sed -E '/## 📊 solved\.ac 통계/,/^##[^#]/c\'"$STATS_SECTION"'\n\n##')
-          elif echo "$README_CONTENT" | grep -q "## 🚀 진행 상황"; then
-            # 기존 진행 상황 섹션이 있는 경우, 해당 섹션을 대체
-            NEW_CONTENT=$(echo "$README_CONTENT" | sed -E '/## 🚀 진행 상황/,/^##[^#]/c\'"$STATS_SECTION"'\n\n##')
+          # 기존 README.md에서 solved.ac 통계 부분 제외한 내용 가져오기
+          if grep -q "## 📊 solved.ac 통계" README.md; then
+            CONTENT_BEFORE=$(grep -B 1000 -m 1 "## 📊 solved.ac 통계" README.md | head -n -1)
+            CONTENT_AFTER=$(grep -A 1000 -m 1 "^## " <(grep -A 1000 "## 📊 solved.ac 통계" README.md) | tail -n +2)
+          elif grep -q "## 🚀 진행 상황" README.md; then
+            CONTENT_BEFORE=$(grep -B 1000 -m 1 "## 🚀 진행 상황" README.md | head -n -1)
+            CONTENT_AFTER=$(grep -A 1000 -m 1 "^## " <(grep -A 1000 "## 🚀 진행 상황" README.md) | tail -n +2)
           else
-            # 두 섹션 모두 없는 경우, 파일 끝에 추가
-            NEW_CONTENT="${README_CONTENT}\n\n${STATS_SECTION}"
+            CONTENT_BEFORE=$(cat README.md)
+            CONTENT_AFTER=""
           fi
           
-          # 업데이트된 내용을 README.md에 쓰기
-          echo "$NEW_CONTENT" > README.md
+          # 새 통계 내용 생성
+          STATS_CONTENT="## 📊 solved.ac 통계
+> 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
 
-      - name: Commit and push changes with force
+[![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
+
+### 기본 정보
+- 티어: ${{ steps.solvedac.outputs.tier_name }}
+- 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
+- 랭킹: ${{ steps.solvedac.outputs.rank }}위
+
+## 🚀 진행 상황
+| 난이도 | 해결한 문제 수 |
+|:-------:|:-------:|
+| 브론즈 | ${{ steps.solvedac.outputs.bronze_count }}문제 |
+| 실버 | ${{ steps.solvedac.outputs.silver_count }}문제 |
+| 골드 | ${{ steps.solvedac.outputs.gold_count }}문제 |
+| 플래티넘 | ${{ steps.solvedac.outputs.platinum_count }}문제 |
+| 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
+| 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
+| **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |"
+          
+          # 새 README 파일 생성
+          if [ -n "$CONTENT_BEFORE" ]; then
+            echo "$CONTENT_BEFORE" > NEW_README.md
+            echo "" >> NEW_README.md
+          else
+            touch NEW_README.md
+          fi
+          
+          echo "$STATS_CONTENT" >> NEW_README.md
+          
+          if [ -n "$CONTENT_AFTER" ]; then
+            echo "" >> NEW_README.md
+            echo "$CONTENT_AFTER" >> NEW_README.md
+          fi
+          
+          # 새 README 파일로 교체
+          mv NEW_README.md README.md
+
+      - name: Commit and push changes
         run: |
-          # 변경사항 확인 및 커밋
+          git config --local user.email "github-actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
           git add README.md
+          
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
           
-          # 변경사항 커밋
           git commit -m "Update solved.ac statistics and problem counts"
-          
-          # 강제 푸시
           git push --force
