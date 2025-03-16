@@ -95,8 +95,16 @@ jobs:
 
       - name: Commit and push changes
         run: |
+          # 먼저 원격 저장소의 최신 변경사항을 가져옵니다
+          git pull --rebase origin main
+          
+          # Git 사용자 설정
           git config --local user.email "github-actions@github.com"
           git config --local user.name "GitHub Actions"
+          
+          # README.md 파일 변경사항 추가 및 커밋
           git add README.md
           git diff --staged --quiet || git commit -m "Update solved.ac statistics"
-          git push --force
+          
+          # 변경사항 푸시
+          git push origin main
