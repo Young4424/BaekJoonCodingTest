@@ -1,5 +1,9 @@
 # 백준 알고리즘 문제 풀이 저장소
 
+
+![python_coding_3](https://github.com/user-attachments/assets/69600399-5107-4edd-87aa-74b02de454e0)
+
+
 이 저장소는 [백준 온라인 저지](https://www.acmicpc.net/)의 알고리즘 문제 풀이를 기록하고 공유하기 위한 곳입니다.
 
 ## 📚 목차
