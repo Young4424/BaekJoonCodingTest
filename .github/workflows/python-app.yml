@@ -21,12 +21,7 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Fetch and pull latest changes
-        run: |
-          git fetch --all
-          git pull origin main
-
-      - name: Get solved.ac user info
+      - name: Get solved.ac user info and problem stats
         id: solvedac
         run: |
           # BOJ 사용자 이름 설정
@@ -70,59 +65,119 @@ jobs:
           # 현재 날짜 가져오기
           DATE=$(date '+%Y-%m-%d %H:%M:%S')
           
+          # 해결한 문제 페이지별로 가져오기
+          echo "사용자가 해결한 문제 정보 가져오는 중..."
+          
+          # 티어별 문제 수 초기화
+          BRONZE_COUNT=0
+          SILVER_COUNT=0
+          GOLD_COUNT=0
+          PLATINUM_COUNT=0
+          DIAMOND_COUNT=0
+          RUBY_COUNT=0
+          
+          PAGE=1
+          TOTAL_PROBLEMS=0
+          
+          while true; do
+            PROBLEMS=$(curl -s "https://solved.ac/api/v3/search/problem?query=solved_by:${BOJ_USERNAME}&page=${PAGE}")
+            COUNT=$(echo $PROBLEMS | jq '.count')
+            ITEMS=$(echo $PROBLEMS | jq '.items')
+            ITEMS_COUNT=$(echo $ITEMS | jq 'length')
+            
+            if [ $ITEMS_COUNT -eq 0 ]; then
+              break
+            fi
+            
+            # 문제별 티어 집계
+            for i in $(seq 0 $(($ITEMS_COUNT - 1))); do
+              PROBLEM_TIER=$(echo $ITEMS | jq -r ".[$i].level")
+              
+              if [ $PROBLEM_TIER -ge 1 ] && [ $PROBLEM_TIER -le 5 ]; then
+                BRONZE_COUNT=$((BRONZE_COUNT + 1))
+              elif [ $PROBLEM_TIER -ge 6 ] && [ $PROBLEM_TIER -le 10 ]; then
+                SILVER_COUNT=$((SILVER_COUNT + 1))
+              elif [ $PROBLEM_TIER -ge 11 ] && [ $PROBLEM_TIER -le 15 ]; then
+                GOLD_COUNT=$((GOLD_COUNT + 1))
+              elif [ $PROBLEM_TIER -ge 16 ] && [ $PROBLEM_TIER -le 20 ]; then
+                PLATINUM_COUNT=$((PLATINUM_COUNT + 1))
+              elif [ $PROBLEM_TIER -ge 21 ] && [ $PROBLEM_TIER -le 25 ]; then
+                DIAMOND_COUNT=$((DIAMOND_COUNT + 1))
+              elif [ $PROBLEM_TIER -ge 26 ] && [ $PROBLEM_TIER -le 31 ]; then
+                RUBY_COUNT=$((RUBY_COUNT + 1))
+              fi
+            done
+            
+            TOTAL_PROBLEMS=$((TOTAL_PROBLEMS + ITEMS_COUNT))
+            
+            if [ $TOTAL_PROBLEMS -ge $COUNT ]; then
+              break
+            fi
+            
+            PAGE=$((PAGE + 1))
+          done
+          
+          TOTAL_BY_TIER=$((BRONZE_COUNT + SILVER_COUNT + GOLD_COUNT + PLATINUM_COUNT + DIAMOND_COUNT + RUBY_COUNT))
+          
           # 정보 저장
           echo "username=${BOJ_USERNAME}" >> $GITHUB_OUTPUT
           echo "tier_name=${TIER_NAME}" >> $GITHUB_OUTPUT
           echo "solved_count=${SOLVED_COUNT}" >> $GITHUB_OUTPUT
           echo "rank=${RANK}" >> $GITHUB_OUTPUT
           echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "bronze_count=${BRONZE_COUNT}" >> $GITHUB_OUTPUT
+          echo "silver_count=${SILVER_COUNT}" >> $GITHUB_OUTPUT
+          echo "gold_count=${GOLD_COUNT}" >> $GITHUB_OUTPUT
+          echo "platinum_count=${PLATINUM_COUNT}" >> $GITHUB_OUTPUT
+          echo "diamond_count=${DIAMOND_COUNT}" >> $GITHUB_OUTPUT
+          echo "ruby_count=${RUBY_COUNT}" >> $GITHUB_OUTPUT
+          echo "total_by_tier=${TOTAL_BY_TIER}" >> $GITHUB_OUTPUT
 
       - name: Update README using GitHub API
         run: |
           # solved.ac 통계 섹션 생성
           STATS_SECTION="## 📊 solved.ac 통계
           > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
-      
+
           [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
-      
+
           ### 기본 정보
           - 티어: ${{ steps.solvedac.outputs.tier_name }}
           - 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
-          - 랭킹: ${{ steps.solvedac.outputs.rank }}위"
+          - 랭킹: ${{ steps.solvedac.outputs.rank }}위
+
+          ## 🚀 진행 상황
+          | 난이도 | 해결한 문제 수 |
+          |:-------:|:-------:|
+          | 브론즈 | ${{ steps.solvedac.outputs.bronze_count }}문제 |
+          | 실버 | ${{ steps.solvedac.outputs.silver_count }}문제 |
+          | 골드 | ${{ steps.solvedac.outputs.gold_count }}문제 |
+          | 플래티넘 | ${{ steps.solvedac.outputs.platinum_count }}문제 |
+          | 다이아몬드 | ${{ steps.solvedac.outputs.diamond_count }}문제 |
+          | 루비 | ${{ steps.solvedac.outputs.ruby_count }}문제 |
+          | **합계** | **${{ steps.solvedac.outputs.total_by_tier }}문제** |"
           
           # 현재 README 내용 가져오기
-          README_CONTENT=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
-            | jq -r .content | base64 --decode)
+          README_CONTENT=$(cat README.md)
           
           # 기존 통계 섹션 업데이트 또는 추가
           if echo "$README_CONTENT" | grep -q "## 📊 solved.ac 통계"; then
-            NEW_CONTENT=$(echo "$README_CONTENT" | perl -pe 's/## 📊 solved\.ac 통계.*?(?=\n##|\Z)/$STATS_SECTION/s')
+            # 기존 통계 섹션이 있는 경우, 해당 섹션부터 다음 섹션까지 대체
+            NEW_CONTENT=$(echo "$README_CONTENT" | sed -E '/## 📊 solved\.ac 통계/,/^##[^#]/c\'"$STATS_SECTION"'\n\n##')
+          elif echo "$README_CONTENT" | grep -q "## 🚀 진행 상황"; then
+            # 기존 진행 상황 섹션이 있는 경우, 해당 섹션을 대체
+            NEW_CONTENT=$(echo "$README_CONTENT" | sed -E '/## 🚀 진행 상황/,/^##[^#]/c\'"$STATS_SECTION"'\n\n##')
           else
+            # 두 섹션 모두 없는 경우, 파일 끝에 추가
             NEW_CONTENT="${README_CONTENT}\n\n${STATS_SECTION}"
           fi
           
-          # 현재 README 파일의 SHA 가져오기
-          SHA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
-            | jq -r .sha)
-          
-          # GitHub API를 통해 파일 업데이트
-          curl -X PUT \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
-            -d @- << EOF
-          {
-            "message": "Update solved.ac statistics",
-            "content": "$(echo -n "$NEW_CONTENT" | base64 -w 0)",
-            "sha": "$SHA"
-          }
-          EOF
+          # 업데이트된 내용을 README.md에 쓰기
+          echo "$NEW_CONTENT" > README.md
 
-      - name: Commit and push changes
+      - name: Commit and push changes with force
         run: |
-          # 변경사항이 있는지 확인
+          # 변경사항 확인 및 커밋
           git add README.md
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -130,22 +185,7 @@ jobs:
           fi
           
           # 변경사항 커밋
-          git commit -m "Update solved.ac statistics"
+          git commit -m "Update solved.ac statistics and problem counts"
           
-          # 변경사항 푸시 (여러 번 시도)
-          MAX_RETRIES=3
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if git push; then
-              echo "Successfully pushed changes"
-              exit 0
-            else
-              echo "Push failed, retrying..."
-              git pull --rebase
-              RETRY_COUNT=$((RETRY_COUNT+1))
-            fi
-          done
-          
-          echo "Failed to push changes after $MAX_RETRIES attempts"
-          exit 1
+          # 강제 푸시
+          git push --force
