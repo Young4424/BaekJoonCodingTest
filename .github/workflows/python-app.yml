@@ -77,33 +77,48 @@ jobs:
           echo "rank=${RANK}" >> $GITHUB_OUTPUT
           echo "date=${DATE}" >> $GITHUB_OUTPUT
 
-      - name: Update README
+      - name: Update README using GitHub API
         run: |
-          # README.md 파일에서 해당 섹션 찾아 업데이트하기
-          
           # solved.ac 통계 섹션 생성
-          STATS_SECTION=$(cat << EOF
-          ## 📊 solved.ac 통계
+          STATS_SECTION="## 📊 solved.ac 통계
           > 마지막 업데이트: ${{ steps.solvedac.outputs.date }}
-
+      
           [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
-
+      
           ### 기본 정보
           - 티어: ${{ steps.solvedac.outputs.tier_name }}
           - 해결한 문제 수: ${{ steps.solvedac.outputs.solved_count }}개
-          - 랭킹: ${{ steps.solvedac.outputs.rank }}위
-          EOF
-          )
+          - 랭킹: ${{ steps.solvedac.outputs.rank }}위"
           
-          # 기존 섹션이 있는지 확인하고 업데이트
-          if grep -q "## 📊 solved.ac 통계" README.md; then
-            # sed를 사용하여 기존 섹션 대체
-            # 정규식으로 섹션 시작부터 다음 섹션 시작 전까지 찾아 대체
-            sed -i '/## 📊 solved\.ac 통계/,/##/c\'"$STATS_SECTION"'\n\n##' README.md
+          # 현재 README 내용 가져오기
+          README_CONTENT=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
+            | jq -r .content | base64 --decode)
+          
+          # 기존 통계 섹션 업데이트 또는 추가
+          if echo "$README_CONTENT" | grep -q "## 📊 solved.ac 통계"; then
+            NEW_CONTENT=$(echo "$README_CONTENT" | perl -pe 's/## 📊 solved\.ac 통계.*?(?=\n##|\Z)/$STATS_SECTION/s')
           else
-            # 기존 섹션이 없으면 파일 끝에 추가
-            echo -e "\n$STATS_SECTION" >> README.md
+            NEW_CONTENT="${README_CONTENT}\n\n${STATS_SECTION}"
           fi
+          
+          # 현재 README 파일의 SHA 가져오기
+          SHA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
+            | jq -r .sha)
+          
+          # GitHub API를 통해 파일 업데이트
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/Young4424/BaekJoonCodingTest/contents/README.md" \
+            -d @- << EOF
+          {
+            "message": "Update solved.ac statistics",
+            "content": "$(echo -n "$NEW_CONTENT" | base64 -w 0)",
+            "sha": "$SHA"
+          }
+          EOF
 
       - name: Commit and push changes
         run: |
