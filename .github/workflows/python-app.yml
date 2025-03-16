@@ -99,4 +99,4 @@ jobs:
           git config --local user.name "GitHub Actions"
           git add README.md
           git diff --staged --quiet || git commit -m "Update solved.ac statistics"
-          git push
+          git push "https://${{ secrets.PAT }}@github.com/Young4424/BaekJoonCodingTest.git" main
