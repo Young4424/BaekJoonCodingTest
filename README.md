@@ -62,8 +62,8 @@
 ![python_coding_3](https://github.com/user-attachments/assets/69600399-5107-4edd-87aa-74b02de454e0)
 
 
-© 2025 [Young4424]. All rights reserved.\n\n## 📊 solved.ac 통계
-> 마지막 업데이트: 2025-03-16 17:00:04
+## 📊 solved.ac 통계
+> 마지막 업데이트: 2025-03-16 17:11:29
 
 [![solved.ac 프로필](https://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/profile/rladydgnj)
 
@@ -71,3 +71,14 @@
 - 티어: Silver IV
 - 해결한 문제 수: 86개
 - 랭킹: 88088위
+
+## 🚀 진행 상황
+| 난이도 | 해결한 문제 수 |
+|:-------:|:-------:|
+| 브론즈 | 76문제 |
+| 실버 | 10문제 |
+| 골드 | 0문제 |
+| 플래티넘 | 0문제 |
+| 다이아몬드 | 0문제 |
+| 루비 | 0문제 |
+| **합계** | **86문제** |
