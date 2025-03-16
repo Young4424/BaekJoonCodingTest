@@ -13,14 +13,6 @@
 - [참고 자료](#참고-자료)
 
 
-## 📊 개인 진행 상황
-
-
-[![Solved.ac 프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=rladydgnj)](https://solved.ac/rladydgnj)
-
-[![Solved.ac 티어](http://mazassumnida.wtf/api/mini/generate_badge?boj=rladydgnj)](https://solved.ac/rladydgnj)
-
-
 ## 🎯 소개
 
 백준 온라인 저지에서 제공하는 다양한 알고리즘 문제들을 풀고 해당 풀이 코드를 저장하는 공간입니다. 알고리즘 학습과 코딩 테스트 준비를 위한 개인 기록용으로 사용됩니다.
@@ -59,8 +51,6 @@
 
 ---
 
-![python_coding_3](https://github.com/user-attachments/assets/69600399-5107-4edd-87aa-74b02de454e0)
-
 
 ## 📊 solved.ac 통계
 > 마지막 업데이트: 2025-03-16 17:11:29
@@ -82,3 +72,6 @@
 | 다이아몬드 | 0문제 |
 | 루비 | 0문제 |
 | **합계** | **86문제** |
+
+
+![python_coding_3](https://github.com/user-attachments/assets/69600399-5107-4edd-87aa-74b02de454e0)
