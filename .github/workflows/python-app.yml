@@ -10,8 +10,21 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout code with full history
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Fetch and pull latest changes
+        run: |
+          git fetch --all
+          git pull origin main
 
       - name: Get solved.ac user info
         id: solvedac
@@ -67,7 +80,6 @@ jobs:
       - name: Update README
         run: |
           # README.md 파일에서 해당 섹션 찾아 업데이트하기
-          README_CONTENT=$(cat README.md)
           
           # solved.ac 통계 섹션 생성
           STATS_SECTION=$(cat << EOF
@@ -95,16 +107,30 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          # 먼저 원격 저장소의 최신 변경사항을 가져옵니다
-          git pull --rebase origin main
-          
-          # Git 사용자 설정
-          git config --local user.email "github-actions@github.com"
-          git config --local user.name "GitHub Actions"
-          
-          # README.md 파일 변경사항 추가 및 커밋
+          # 변경사항이 있는지 확인
           git add README.md
-          git diff --staged --quiet || git commit -m "Update solved.ac statistics"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
           
-          # 변경사항 푸시
-          git push origin main
+          # 변경사항 커밋
+          git commit -m "Update solved.ac statistics"
+          
+          # 변경사항 푸시 (여러 번 시도)
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if git push; then
+              echo "Successfully pushed changes"
+              exit 0
+            else
+              echo "Push failed, retrying..."
+              git pull --rebase
+              RETRY_COUNT=$((RETRY_COUNT+1))
+            fi
+          done
+          
+          echo "Failed to push changes after $MAX_RETRIES attempts"
+          exit 1
