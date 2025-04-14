@@ -1,0 +1,15 @@
+import sys
+
+print(f'  ___  ___  ___')
+print(f'  | |__| |__| |')
+print(f'  |           |')
+print(f'   \\_________/')
+print(f'    \\_______/')
+print(f'     |     |')
+print(f'     |     |')
+print(f'     |     |')
+print(f'     |     |')
+print(f'     |_____|')
+print(f'  __/       \\__')
+print(f' /             \\')
+print(f'/_______________\\')
